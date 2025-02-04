@@ -54,7 +54,7 @@ std::string get_current_time()
 void sigxcpu_handler(int signum) {
     // Use thread-local storage or other mechanisms to identify the thread
     // For example, using pthread_self()
-    // std::cerr << "Runtime overrun detected: Task exceeded allocated runtime" << std::endl;
+    std::cerr << "Runtime overrun detected: Task exceeded allocated runtime" << std::endl;
 }
 
 void setup_signal_handler() {
@@ -352,7 +352,6 @@ void main_loop() {
         // auto start_loop = std::chrono::high_resolution_clock::now();
 
         // std::thread recv_nonBlocking(receive_nb, sock);
-        std::cout << "Sending..." << std::endl;
         ssize_t bytes_sent = send(sock, state_buffer, BUFFER_SIZE, 0);
         if (bytes_sent <= 0) {
             perror("Error sending data");
@@ -363,7 +362,6 @@ void main_loop() {
         rt_ts_start = std::chrono::high_resolution_clock::now();
 
         unsigned long long i = 0;
-        std::cout << "Receiving ..." << std::endl;
         while (!check_command(buffer)) {
             recv_ts_start1 = std::chrono::high_resolution_clock::now();
             bytes_received = recv(sock, in_buffer, BUFFER_SIZE, MSG_DONTWAIT);
@@ -394,7 +392,7 @@ void main_loop() {
 
         rt_ts_end = std::chrono::high_resolution_clock::now();
         rt = std::chrono::duration_cast<std::chrono::microseconds>(rt_ts_end - rt_ts_start).count();
-        std::cout << rt << std::endl;
+
         // delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start).count();
 
         if (rt > RT_THRESHOLD) std::cout << "RTT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
