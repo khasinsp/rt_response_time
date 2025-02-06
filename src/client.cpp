@@ -10,10 +10,11 @@
 #include "../include/kuka_rsi_hw_interface/tcp_server.h"
 
 
-#define SERVER_IP "172.29.3.18" // The IP address of the server (VM)
+#define SERVER_IP "172.29.3.26" // The IP address of the server (VM)
 #define PORT 6008
 #define BUFFER_SIZE 2048
-#define RT_THRESHOLD 500
+#define RT_THRESHOLD 4000
+#define PRINT_THRESHOLD 8000
 #define DELTA_T_THRESHOLD 20
 
 // std::mutex hist_mutex;
@@ -25,7 +26,7 @@
 // std::condition_variable recv_time_hist_cv;
 // std::condition_variable max_recv_time_hist_cv;
 
-std::vector<unsigned long long> hist(1000, 0);
+std::vector<unsigned long long> hist(8000, 0);
 std::vector<unsigned long long> delta_t_hist(1000, 0);
 std::vector<unsigned long long> recv_time_hist(1000, 0);
 std::vector<unsigned long long> max_recv_time_hist(1000, 0);
@@ -336,9 +337,9 @@ void main_loop() {
     int sock = 0;
     setup_connection(sock);
 
-    unsigned long runtime =   1000 * 1000;     // ns
-    unsigned long deadline =  1000 * 1000;
-    unsigned long period =    1000 * 1000;
+    unsigned long runtime =   8000 * 1000;     // ns
+    unsigned long deadline =  8000 * 1000;
+    unsigned long period =    8000 * 1000;
 
     setup_signal_handler();
     set_realtime_deadline(runtime, deadline, period);
@@ -352,6 +353,7 @@ void main_loop() {
         // auto start_loop = std::chrono::high_resolution_clock::now();
 
         // std::thread recv_nonBlocking(receive_nb, sock);
+        // std::cout << "Sending..." << std::endl;
         ssize_t bytes_sent = send(sock, state_buffer, BUFFER_SIZE, 0);
         if (bytes_sent <= 0) {
             perror("Error sending data");
@@ -362,6 +364,7 @@ void main_loop() {
         rt_ts_start = std::chrono::high_resolution_clock::now();
 
         unsigned long long i = 0;
+        // std::cout << "Receiving ..." << std::endl;
         while (!check_command(buffer)) {
             recv_ts_start1 = std::chrono::high_resolution_clock::now();
             bytes_received = recv(sock, in_buffer, BUFFER_SIZE, MSG_DONTWAIT);
@@ -392,7 +395,7 @@ void main_loop() {
 
         rt_ts_end = std::chrono::high_resolution_clock::now();
         rt = std::chrono::duration_cast<std::chrono::microseconds>(rt_ts_end - rt_ts_start).count();
-
+        // std::cout << rt << std::endl;
         // delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start).count();
 
         if (rt > RT_THRESHOLD) std::cout << "RTT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
@@ -400,7 +403,7 @@ void main_loop() {
             std::cout << "DET," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
             log_rt = false;
         }
-        if (rt > 1000 || delta_t > 1000) std::cout << "OUT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
+        if (rt > PRINT_THRESHOLD || delta_t > 1000) std::cout << "OUT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
         if (recv_time > DELTA_T_THRESHOLD) std::cout << "REC," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
         if (max_recv_time > DELTA_T_THRESHOLD) std::cout << "MAX," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
 
@@ -425,7 +428,7 @@ void main_loop() {
 int main() {
 
     // RTT
-    std::ofstream hist_csv("/home/urc/response_times/03_02_5/hist.csv");
+    std::ofstream hist_csv("/home/urc/response_times/06_02_1/hist.csv");
     if (!hist_csv.is_open()) {
         std::cerr << "Histogram CSV could not be opened" << std::endl;
     }
@@ -437,7 +440,7 @@ int main() {
     hist_csv.flush();
 
     // Delta T
-    std::ofstream delta_csv("/home/urc/response_times/03_02_5/delta.csv");
+    std::ofstream delta_csv("/home/urc/response_times/06_02_1/delta.csv");
     if (!delta_csv.is_open()) {
         std::cerr << "Delta histogram CSV could not be opened" << std::endl;
     }
@@ -449,7 +452,7 @@ int main() {
     delta_csv.flush();
 
     // Recv times
-    std::ofstream recv_time_hist_csv("/home/urc/response_times/03_02_5/recv_time_hist.csv");
+    std::ofstream recv_time_hist_csv("/home/urc/response_times/06_02_1/recv_time_hist.csv");
     if (!recv_time_hist_csv.is_open()) {
         std::cerr << "Receive Time Histogram could not be opened" << std::endl;
     }
@@ -461,7 +464,7 @@ int main() {
     recv_time_hist_csv.flush();
 
     // Max Recv Times
-    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/03_02_5/max_recv_time_hist.csv");
+    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/06_02_1/max_recv_time_hist.csv");
     if (!max_recv_time_hist_csv.is_open()) {
         std::cerr << "Max receive Time Histogram could not be opened" << std::endl;
     }
