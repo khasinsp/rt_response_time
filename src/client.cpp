@@ -10,7 +10,7 @@
 #include "../include/kuka_rsi_hw_interface/tcp_server.h"
 
 
-#define SERVER_IP "172.29.3.26" // The IP address of the server (VM)
+#define SERVER_IP "172.29.3.25" // The IP address of the server (VM)
 #define PORT 6008
 #define BUFFER_SIZE 2048
 #define RT_THRESHOLD 4000
@@ -428,7 +428,7 @@ void main_loop() {
 int main() {
 
     // RTT
-    std::ofstream hist_csv("/home/urc/response_times/06_02_1/hist.csv");
+    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/07_02_1/hist.csv");
     if (!hist_csv.is_open()) {
         std::cerr << "Histogram CSV could not be opened" << std::endl;
     }
@@ -440,7 +440,7 @@ int main() {
     hist_csv.flush();
 
     // Delta T
-    std::ofstream delta_csv("/home/urc/response_times/06_02_1/delta.csv");
+    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/07_02_1/delta.csv");
     if (!delta_csv.is_open()) {
         std::cerr << "Delta histogram CSV could not be opened" << std::endl;
     }
@@ -452,7 +452,7 @@ int main() {
     delta_csv.flush();
 
     // Recv times
-    std::ofstream recv_time_hist_csv("/home/urc/response_times/06_02_1/recv_time_hist.csv");
+    std::ofstream recv_time_hist_csv("/home/urc/response_times/PCI_tests/07_02_1/recv_time_hist.csv");
     if (!recv_time_hist_csv.is_open()) {
         std::cerr << "Receive Time Histogram could not be opened" << std::endl;
     }
@@ -464,7 +464,7 @@ int main() {
     recv_time_hist_csv.flush();
 
     // Max Recv Times
-    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/06_02_1/max_recv_time_hist.csv");
+    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/PCI_tests/07_02_1/max_recv_time_hist.csv");
     if (!max_recv_time_hist_csv.is_open()) {
         std::cerr << "Max receive Time Histogram could not be opened" << std::endl;
     }
