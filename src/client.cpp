@@ -172,7 +172,7 @@ void setup_connection(int &sock) {
     memset(&local_addr, 0, sizeof(local_addr));
     local_addr.sin_family = AF_INET;
     local_addr.sin_port = 0;
-    if (inet_pton(AF_INET, "172.29.3.3", &local_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, "172.29.3.28", &local_addr.sin_addr) <= 0) {
         perror("Invalid local address");
         return;
     }
@@ -389,6 +389,7 @@ void main_loop() {
                 delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start[(i % 2)]).count();
             }
             i++;
+            std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         buffer = "";
