@@ -367,6 +367,7 @@ void main_loop() {
         // std::cout << "Receiving ..." << std::endl;
         while (!check_command(buffer)) {
             recv_ts_start1 = std::chrono::high_resolution_clock::now();
+            memset(in_buffer, 0, BUFFER_SIZE);
             bytes_received = recv(sock, in_buffer, BUFFER_SIZE, MSG_DONTWAIT);
             if (bytes_received < 0 && measure_again) {
                 recv_ts_start[i % 2] = std::chrono::high_resolution_clock::now();
