@@ -430,7 +430,7 @@ void main_loop() {
 int main() {
 
     // RTT
-    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/07_02/hist.csv");
+    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/05_03_1/hist.csv");
     if (!hist_csv.is_open()) {
         std::cerr << "Histogram CSV could not be opened" << std::endl;
     }
@@ -442,7 +442,7 @@ int main() {
     hist_csv.flush();
 
     // Delta T
-    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/07_02/delta.csv");
+    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/05_03_1/delta.csv");
     if (!delta_csv.is_open()) {
         std::cerr << "Delta histogram CSV could not be opened" << std::endl;
     }
@@ -454,7 +454,7 @@ int main() {
     delta_csv.flush();
 
     // Recv times
-    std::ofstream recv_time_hist_csv("/home/urc/response_times/PCI_tests/07_02/recv_time_hist.csv");
+    std::ofstream recv_time_hist_csv("/home/urc/response_times/PCI_tests/05_03_1/recv_time_hist.csv");
     if (!recv_time_hist_csv.is_open()) {
         std::cerr << "Receive Time Histogram could not be opened" << std::endl;
     }
@@ -466,7 +466,7 @@ int main() {
     recv_time_hist_csv.flush();
 
     // Max Recv Times
-    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/PCI_tests/07_02/max_recv_time_hist.csv");
+    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/PCI_tests/05_03_1/max_recv_time_hist.csv");
     if (!max_recv_time_hist_csv.is_open()) {
         std::cerr << "Max receive Time Histogram could not be opened" << std::endl;
     }
