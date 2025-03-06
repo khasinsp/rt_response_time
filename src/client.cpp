@@ -10,12 +10,12 @@
 #include "../include/kuka_rsi_hw_interface/tcp_server.h"
 
 
-#define SERVER_IP "172.29.3.25" // The IP address of the server (VM)
+#define SERVER_IP "172.29.3.26" // The IP address of the server (VM)
 #define PORT 6008
 #define BUFFER_SIZE 2048
-#define RT_THRESHOLD 500
-#define PRINT_THRESHOLD 1000
-#define DELTA_T_THRESHOLD 20
+#define RT_THRESHOLD 5000
+#define PRINT_THRESHOLD 10000
+#define DELTA_T_THRESHOLD 40
 
 // std::mutex hist_mutex;
 // std::mutex recv_time_hist_mutex;
@@ -26,7 +26,7 @@
 // std::condition_variable recv_time_hist_cv;
 // std::condition_variable max_recv_time_hist_cv;
 
-std::vector<unsigned long long> hist(1000, 0);
+std::vector<unsigned long long> hist(10000, 0);
 std::vector<unsigned long long> delta_t_hist(1000, 0);
 std::vector<unsigned long long> recv_time_hist(1000, 0);
 std::vector<unsigned long long> max_recv_time_hist(1000, 0);
@@ -337,9 +337,9 @@ void main_loop() {
     int sock = 0;
     setup_connection(sock);
 
-    unsigned long runtime =   1000 * 1000;     // ns
-    unsigned long deadline =  1000 * 1000;
-    unsigned long period =    1000 * 1000;
+    unsigned long runtime =   10000 * 1000;     // ns
+    unsigned long deadline =  10000 * 1000;
+    unsigned long period =    10000 * 1000;
 
     setup_signal_handler();
     set_realtime_deadline(runtime, deadline, period);
