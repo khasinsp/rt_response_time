@@ -389,7 +389,7 @@ void main_loop() {
                 delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start[(i % 2)]).count();
             }
             i++;
-            std::this_thread::sleep_for(std::chrono::microseconds(10));
+            // std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         buffer = "";
