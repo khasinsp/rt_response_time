@@ -278,7 +278,7 @@ void hist_to_csv(std::ofstream* csv_ptr, std::vector<unsigned long long> *vec_pt
 
 void add_to_hist(std::vector<unsigned long long> &vec, double t, double res) {
     int idx = t / res;
-    vec[idx]++;
+    if (idx >= 0 && idx < vec.size()) vec[idx]++;
 }
 
 
