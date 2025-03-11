@@ -18,26 +18,8 @@
 #define PRINT_THRESHOLD RUNTIME
 #define DELTA_T_THRESHOLD 40
 
-// std::mutex hist_mutex;
-// std::mutex recv_time_hist_mutex;
-// std::mutex max_recv_time_hist_mutex;
-// std::vector<double> recv_time_hist(50, 0);
-// std::vector<double> max_recv_time_hist(50, 0);
-// std::condition_variable hist_cv;
-// std::condition_variable recv_time_hist_cv;
-// std::condition_variable max_recv_time_hist_cv;
-
 std::vector<unsigned long long> hist(RUNTIME, 0);
 std::vector<unsigned long long> delta_t_hist(1000, 0);
-
-
-std::mutex time_point_mutex;
-std::chrono::high_resolution_clock::time_point sent_tp;
-std::chrono::high_resolution_clock::time_point received_tp;
-std::condition_variable timepoint_cv;
-
-bool log_rt;
-
 
 std::string get_current_time()
 {
@@ -277,19 +259,16 @@ void main_loop() {
 
     set_CPU(0);
 
-    double max_rt = 0;
     std::chrono::high_resolution_clock::time_point rt_ts_start;
     std::chrono::high_resolution_clock::time_point rt_ts_end;
     double rt;
+
     std::vector<std::chrono::high_resolution_clock::time_point> recv_ts_start(2);
     std::chrono::high_resolution_clock::time_point recv_ts_end;
-    std::chrono::high_resolution_clock::time_point recv_ts_start1;
-    std::chrono::high_resolution_clock::time_point recv_ts_end1;
     double delta_t;
     bool measure_again;
-    std::chrono::high_resolution_clock::time_point recv_ts_end_max;
-    double recv_time = 0;
-    double max_recv_time = 0;
+    bool log_rt;
+
     ssize_t bytes_received;
 
     std::string buffer = "";
@@ -328,7 +307,6 @@ void main_loop() {
 
     setup_signal_handler();
     set_realtime_deadline(runtime, deadline, period);
-    // set_realtime_priority(99);
 
     while (true) {
 
@@ -401,7 +379,7 @@ void main_loop() {
 int main() {
 
     // RTT
-    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/10_03_2/hist.csv");
+    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/11_03_1/hist.csv");
     if (!hist_csv.is_open()) {
         std::cerr << "Histogram CSV could not be opened" << std::endl;
     }
@@ -413,7 +391,7 @@ int main() {
     hist_csv.flush();
 
     // Delta T
-    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/10_03_2/delta.csv");
+    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/11_03_1/delta.csv");
     if (!delta_csv.is_open()) {
         std::cerr << "Delta histogram CSV could not be opened" << std::endl;
     }
