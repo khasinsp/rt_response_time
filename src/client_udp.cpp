@@ -120,21 +120,11 @@ void setup_connection(int &sock) {
 
     struct sockaddr_in serv_addr, local_addr;
 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("Socket creation error");
         return;
     }
-
-    {
-        int flag = 1;
-        if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-            perror("setsockopt(TCP_NODELAY) failed");
-            close(sock);
-            return;
-        }
-    }
-
 
     memset(&local_addr, 0, sizeof(local_addr));
     local_addr.sin_family = AF_INET;
