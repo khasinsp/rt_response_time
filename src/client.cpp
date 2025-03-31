@@ -15,27 +15,12 @@
 #define BUFFER_SIZE 2048
 #define RT_THRESHOLD 500
 #define PRINT_THRESHOLD 1000
-#define DELTA_T_THRESHOLD 40
-
-// std::mutex hist_mutex;
-// std::mutex recv_time_hist_mutex;
-// std::mutex max_recv_time_hist_mutex;
-// std::vector<double> recv_time_hist(50, 0);
-// std::vector<double> max_recv_time_hist(50, 0);
-// std::condition_variable hist_cv;
-// std::condition_variable recv_time_hist_cv;
-// std::condition_variable max_recv_time_hist_cv;
+#define DELTA_T_THRESHOLD 60
 
 std::vector<unsigned long long> hist(1000, 0);
 std::vector<unsigned long long> delta_t_hist(1000, 0);
 std::vector<unsigned long long> recv_time_hist(1000, 0);
 std::vector<unsigned long long> max_recv_time_hist(1000, 0);
-
-
-std::mutex time_point_mutex;
-std::chrono::high_resolution_clock::time_point sent_tp;
-std::chrono::high_resolution_clock::time_point received_tp;
-std::condition_variable timepoint_cv;
 
 bool log_rt;
 
@@ -292,19 +277,16 @@ void main_loop() {
 
     set_CPU(0);
 
-    double max_rt = 0;
     std::chrono::high_resolution_clock::time_point rt_ts_start;
     std::chrono::high_resolution_clock::time_point rt_ts_end;
     double rt;
     std::vector<std::chrono::high_resolution_clock::time_point> recv_ts_start(2);
     std::chrono::high_resolution_clock::time_point recv_ts_end;
-    std::chrono::high_resolution_clock::time_point recv_ts_start1;
-    std::chrono::high_resolution_clock::time_point recv_ts_end1;
     double delta_t;
+    std::chrono::high_resolution_clock::time_point before_recv_backup;
+    std::chrono::high_resolution_clock::time_point after_recv_backup;
+
     bool measure_again;
-    std::chrono::high_resolution_clock::time_point recv_ts_end_max;
-    double recv_time = 0;
-    double max_recv_time = 0;
     ssize_t bytes_received;
 
     std::string buffer = "";
@@ -343,17 +325,15 @@ void main_loop() {
 
     setup_signal_handler();
     set_realtime_deadline(runtime, deadline, period);
-    // set_realtime_priority(99);
 
     while (true) {
 
         measure_again = true;
         log_rt = true;
 
-        // auto start_loop = std::chrono::high_resolution_clock::now();
+        std::vector<std::chrono::high_resolution_clock::time_point> before_recv;
+        std::vector<std::chrono::high_resolution_clock::time_point> after_recv;
 
-        // std::thread recv_nonBlocking(receive_nb, sock);
-        // std::cout << "Sending..." << std::endl;
         ssize_t bytes_sent = send(sock, state_buffer, BUFFER_SIZE, 0);
         if (bytes_sent <= 0) {
             perror("Error sending data");
@@ -363,58 +343,51 @@ void main_loop() {
 
         rt_ts_start = std::chrono::high_resolution_clock::now();
 
-        unsigned long long i = 0;
-        // std::cout << "Receiving ..." << std::endl;
         while (!check_command(buffer)) {
-            recv_ts_start1 = std::chrono::high_resolution_clock::now();
+
             memset(in_buffer, 0, BUFFER_SIZE);
+            
+            before_recv.push_back(std::chrono::high_resolution_clock::now());
             bytes_received = recv(sock, in_buffer, BUFFER_SIZE, MSG_DONTWAIT);
-            if (bytes_received < 0 && measure_again) {
-                recv_ts_start[i % 2] = std::chrono::high_resolution_clock::now();
-            }
-            recv_ts_end_max = std::chrono::high_resolution_clock::now();
-            double recv_time_max = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end_max - recv_ts_start1).count();
-            if (recv_time_max > max_recv_time) max_recv_time = recv_time_max;
+            after_recv.push_back(std::chrono::high_resolution_clock::now());
+
             if (bytes_received > 0) {
                 buffer = buffer + in_buffer;
-                if (measure_again) recv_ts_end = std::chrono::high_resolution_clock::now();
+                if (measure_again) {
+                    if (before_recv.size() < 2) {
+                        delta_t = std::chrono::duration_cast<std::chrono::microseconds>(after_recv[after_recv.size() - 1] - before_recv_backup).count();
+                    }
+                    else {
+                        delta_t = std::chrono::duration_cast<std::chrono::microseconds>(after_recv[after_recv.size() - 1] - before_recv[before_recv.size() - 2]).count();
+                    }
+                }
                 measure_again = false;
-                recv_time += std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start1).count();
             }
             else if (bytes_received == 0) {
                 perror("Error receiving data");
                 close(sock);
                 return;
             }
-            if (!measure_again) {
-                delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start[(i % 2)]).count();
-            }
-            i++;
-            // std::this_thread::sleep_for(std::chrono::microseconds(10));
         }
 
         buffer = "";
 
         rt_ts_end = std::chrono::high_resolution_clock::now();
         rt = std::chrono::duration_cast<std::chrono::microseconds>(rt_ts_end - rt_ts_start).count();
-        // std::cout << rt << std::endl;
-        // delta_t = std::chrono::duration_cast<std::chrono::microseconds>(recv_ts_end - recv_ts_start).count();
-
-        if (rt > RT_THRESHOLD) std::cout << "RTT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
+        
+        if (rt > RT_THRESHOLD) std::cout << "RTT," << get_current_time() << "," << rt << "," << delta_t  << std::endl;
         if (delta_t > DELTA_T_THRESHOLD) {
-            std::cout << "DET," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
+            std::cout << "DET," << get_current_time() << "," << rt << "," << delta_t << std::endl;
             log_rt = false;
         }
-        if (rt > PRINT_THRESHOLD || delta_t > 1000) std::cout << "OUT," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
-        if (recv_time > DELTA_T_THRESHOLD) std::cout << "REC," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
-        if (max_recv_time > DELTA_T_THRESHOLD) std::cout << "MAX," << get_current_time() << "," << rt << "," << delta_t << "," << recv_time << "," << max_recv_time << std::endl;
-
+        if (rt > PRINT_THRESHOLD || delta_t > 1000) std::cout << "OUT," << get_current_time() << "," << rt << "," << delta_t << std::endl;
+        
         if (log_rt) add_to_hist(hist, rt, 1.0);
         add_to_hist(delta_t_hist, delta_t, 1.0);
-        add_to_hist(recv_time_hist, recv_time, 1.0);
-        add_to_hist(max_recv_time_hist, max_recv_time, 1.0);
-        recv_time = 0;
-        max_recv_time = 0;
+
+        before_recv_backup = before_recv[before_recv.size() - 1];
+        after_recv_backup = after_recv[after_recv.size() - 1];
+
 
         sched_yield();
 
@@ -430,7 +403,7 @@ void main_loop() {
 int main() {
 
     // RTT
-    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/10_03_2/hist.csv");
+    std::ofstream hist_csv("/home/urc/response_times/PCI_tests/25_03_1/hist.csv");
     if (!hist_csv.is_open()) {
         std::cerr << "Histogram CSV could not be opened" << std::endl;
     }
@@ -442,7 +415,7 @@ int main() {
     hist_csv.flush();
 
     // Delta T
-    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/10_03_2/delta.csv");
+    std::ofstream delta_csv("/home/urc/response_times/PCI_tests/25_03_1/delta.csv");
     if (!delta_csv.is_open()) {
         std::cerr << "Delta histogram CSV could not be opened" << std::endl;
     }
@@ -453,41 +426,14 @@ int main() {
     delta_csv << "\n";
     delta_csv.flush();
 
-    // Recv times
-    std::ofstream recv_time_hist_csv("/home/urc/response_times/PCI_tests/10_03_2/recv_time_hist.csv");
-    if (!recv_time_hist_csv.is_open()) {
-        std::cerr << "Receive Time Histogram could not be opened" << std::endl;
-    }
-    for (int i = 0; i < recv_time_hist.size(); i++) {
-        recv_time_hist_csv << i;
-        if (i < recv_time_hist.size() - 1) recv_time_hist_csv << ",";
-    }
-    recv_time_hist_csv << "\n";
-    recv_time_hist_csv.flush();
-
-    // Max Recv Times
-    std::ofstream max_recv_time_hist_csv("/home/urc/response_times/PCI_tests/10_03_2/max_recv_time_hist.csv");
-    if (!max_recv_time_hist_csv.is_open()) {
-        std::cerr << "Max receive Time Histogram could not be opened" << std::endl;
-    }
-    for (int i = 0; i < max_recv_time_hist.size(); i++) {
-        max_recv_time_hist_csv << i;
-        if (i < max_recv_time_hist.size() - 1) max_recv_time_hist_csv << ",";
-    }
-    max_recv_time_hist_csv << "\n";
-    max_recv_time_hist_csv.flush();
 
     std::thread main_(main_loop);
     std::thread hist_1(hist_to_csv, &hist_csv, &hist);
     std::thread hist_2(hist_to_csv, &delta_csv, &delta_t_hist);
-    std::thread hist_3(hist_to_csv, &recv_time_hist_csv, &recv_time_hist);
-    std::thread hist_4(hist_to_csv, &max_recv_time_hist_csv, &max_recv_time_hist);
 
     main_.join();
     hist_1.join();
     hist_2.join();
-    hist_3.join();
-    hist_4.join();
 
 
     return 0;
