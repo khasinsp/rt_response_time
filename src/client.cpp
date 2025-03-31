@@ -334,7 +334,7 @@ void main_loop() {
         std::vector<std::chrono::high_resolution_clock::time_point> before_recv;
         std::vector<std::chrono::high_resolution_clock::time_point> after_recv;
 
-        ssize_t bytes_sent = send(sock, state_buffer, BUFFER_SIZE, 0);
+        ssize_t bytes_sent = send(sock, state_buffer, strlen(state_buffer), 0);
         if (bytes_sent <= 0) {
             perror("Error sending data");
             close(sock);
